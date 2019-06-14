@@ -1,0 +1,170 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+
+```
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+#Import Data
+
+meteorites <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-06-11/meteorites.csv")
+
+
+
+
+```{r}
+meteorites <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-06-11/meteorites.csv")
+
+str(meteorites)
+summary(meteorites)
+```
+
+```{r}
+
+
+name_types<-
+  meteorites%>%
+  group_by(y=as.factor(name_type))%>%
+  select(y)%>%
+  #distinct()%>%
+  summarize(n=n())
+  
+ 
+
+```
+
+```{r}
+
+fall<-
+  meteorites%>%
+  group_by(y=as.factor(fall))%>%
+  select(y)%>%
+  #distinct()%>%
+  summarize(n=n())
+```
+
+```{r}
+year<-
+  meteorites%>%
+  drop_na()%>%
+  group_by(y=as.factor(year))%>%
+  select(y)%>%
+  #distinct()%>%
+  summarize(n=n())
+```
+
+
+
+```{r}
+meteorites_2<-
+  na.omit(meteorites)%>%
+  filter(year>=1700)%>%
+  mutate(Year_bin = ifelse(year>=1800 & year<1900, "1800s",
+         ifelse(year>=1900 & year <2000,"1900s",
+                ifelse(year>=2000,"2000s","1700s"))))
+  
+
+
+```
+
+```{r}
+meteorites_UK<-
+  meteorites_2 %>%
+  filter(long>-9&long<3 & lat<62 & lat>50)
+```
+
+
+```{r}
+install.packages("mapdata")
+install.packages(c("rnaturalearth","rgeos","rnaturalearthdata","ggdark","cowplot","ggsn","ggmap","sf",ggforce,maps,mapdata))
+
+
+library(mapdata)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(ggdark)
+library(cowplot)
+library(ggsn)
+library(maps)
+library("ggmap")
+library(tidyverse)
+library(sf)
+library(rgeos)
+
+```
+
+```{r}
+mp <- NULL
+mapWorld <- borders("world", colour="red", fill="gray50") # create a layer of borders
+mp <- ggplot() +   mapWorld
+mp
+```
+
+```{r}
+WorldData <- map_data('world') #%>% filter(region != "Antarctica") %>% fortify
+WorldData
+
+p <- ggplot() +
+    geom_map(data = WorldData, map = WorldData,
+                  aes(x = long, y = lat, group = group, map_id=region),
+                  fill = "darkgreen", colour = "black", size=0.5) +
+    theme(
+  panel.background = element_rect(fill = "lightblue",
+                                colour = "lightblue",
+                                size = 0.5, linetype = "solid"))+
+geom_point(data = meteorites_2,aes(x=long,y=lat),color = "orange",size=0.5)+
+    ggtitle("Locations of Meteorite By Year")+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())+
+  
+facet_wrap(~Year_bin)
+p
+```
+
+```{r}
+UK <- map_data("world")%>% 
+  filter(region == "UK") 
+UK# changed map to UK
+
+UK_map <- 
+  
+  ggplot() +
+    geom_map(data = UK, map = UK,
+                  aes(x = long, y = lat, group = group, map_id=region),
+                  fill = "darkgreen", colour = "black", size=0.5) +
+  
+      theme(
+  panel.background = element_rect(fill = "lightblue",
+                                colour = "lightblue",
+                                size = 0.5, linetype = "solid"))+
+geom_point(data = meteorites_UK,aes(x=long,y=lat,size=mass,color=class))+
+  scale_color_manual(values=c("red", "darkblue", "lightgreen","darkolivegreen","pink","purple","gray","brown","cyan","darkorange","black"))+
+  ggtitle("Locations of Meteorite in UK By Mass and Class")+
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())+
+        labs(color='Class Of Meteorite') +
+        labs(size="Mass of Meteorite")
+
+
+UK_map
+#ggplot(data = UK, aes(x = long, y = lat, group = group)) + 
+ # geom_polygon() +
+  #coord_map()
+  
+```
+
